@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   environment:
+  #     - NODE_ENV=development
+  #     - DB_HOST=postgres
+  #     - DB_PORT=5432
+  #     - DB_USERNAME=postgres
+  #     - DB_PASSWORD=password
+  #     - DB_NAME=school_management
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #   volumes:
+  #     - .:/app
+  #     - /app/node_modules
+  #   stdin_open: true
+  #   tty: true
+  #   dns:
+  #     - 8.8.8.8
+  #     - 8.8.4.4
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: school_management_db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=school_management
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - school_network
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - school_network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: school_management_pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - school_network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  school_network:
+    driver: bridge
