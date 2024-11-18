@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import config from './config';
 import sequelize from './config/database';
@@ -19,6 +19,37 @@ import studentRoutes from './routes/studentRoutes';
 import classRoutes from './routes/classRoutes';
 
 const app = express();
+
+// CORS configuration - Allow all origins and headers
+app.use(cors({
+  origin: true, // Allow all origins
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: '*', // Allow all headers
+  exposedHeaders: '*', // Expose all headers
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+}));
+
+// Basic middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Request logging middleware
+app.use(requestLogger);
+
+// Add permissive CORS headers to all responses
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', '*');
+  res.header('Access-Control-Expose-Headers', '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  if (req.method === 'OPTIONS') {
+    return res.status(204).send();
+  }
+  next();
+});
 
 // Swagger configuration
 const swaggerOptions = {
@@ -50,23 +81,6 @@ const swaggerOptions = {
 
 const swaggerDocs = swaggerJsdoc(swaggerOptions);
 
-// CORS configuration
-const corsOptions = {
-  origin: ['http://localhost:3000', 'http://localhost:65026'], // Add all your frontend origins
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  credentials: true,
-  optionsSuccessStatus: 204,
-  allowedHeaders: ['Content-Type', 'Authorization'],
-};
-
-// Middleware
-app.use(cors(corsOptions));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Request logging middleware
-app.use(requestLogger);
-
 // Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
@@ -81,8 +95,15 @@ apiRouter.use('/classes', classRoutes);
 app.use('/api', apiRouter);
 app.use('/', apiRouter);
 
-// Add OPTIONS handler for preflight requests
-app.options('*', cors(corsOptions));
+// Handle preflight requests with permissive CORS
+app.options('*', (req: Request, res: Response) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', '*');
+  res.header('Access-Control-Expose-Headers', '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(204).send();
+});
 
 // 404 handler - add this after all routes
 app.use(notFoundHandler);

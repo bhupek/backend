@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # app:
   #   build:
@@ -22,11 +20,9 @@ services:
   #   volumes:
   #     - .:/app
   #     - /app/node_modules
-  #   stdin_open: true
-  #   tty: true
-  #   dns:
-  #     - 8.8.8.8
-  #     - 8.8.4.4
+  #   networks:
+  #     - app-network
+  #   restart: unless-stopped
 
   postgres:
     image: postgres:15-alpine
@@ -40,16 +36,19 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - school_network
+      - app-network
+    restart: unless-stopped
 
   redis:
     image: redis:alpine
+    container_name: school_management_redis
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
-      - school_network
+      - app-network
+    restart: unless-stopped
 
   pgadmin:
     image: dpage/pgadmin4
@@ -62,12 +61,12 @@ services:
     depends_on:
       - postgres
     networks:
-      - school_network
+      - app-network
 
 volumes:
   postgres_data:
   redis_data:
 
 networks:
-  school_network:
+  app-network:
     driver: bridge

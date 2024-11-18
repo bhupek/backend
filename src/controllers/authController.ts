@@ -7,42 +7,34 @@ import config from '../config';
 // Login controller
 export const login = async (req: Request, res: Response) => {
   try {
+    console.log('Login attempt with data:', req.body);
     const { email, password } = req.body;
-    console.log('Login attempt for email:', email);
 
     // Validate input
     if (!email || !password) {
       console.log('Missing email or password');
-      return res.status(400).json({ 
-        error: "Email and password are required" 
-      });
+      return res.status(400)
+        .header('Access-Control-Allow-Origin', '*')
+        .json({ error: "Email and password are required" });
     }
 
     // Find user by email
-    console.log('Searching for user with email:', email);
-    const user = await User.findOne({ 
-      where: { email },
-      attributes: ['id', 'name', 'email', 'password', 'role']
-    });
-
-    console.log('User found:', user ? 'Yes' : 'No');
-
-    // Check if user exists
+    const user = await User.findOne({ where: { email } });
+    
     if (!user) {
-      console.log('User not found with email:', email);
-      return res.status(401).json({ 
-        error: "Invalid email or password" 
-      });
+      console.log('User not found:', email);
+      return res.status(401)
+        .header('Access-Control-Allow-Origin', '*')
+        .json({ error: "Invalid email or password" });
     }
 
-    // Verify password
+    // Check password
     const validPassword = await bcrypt.compare(password, user.password);
-
     if (!validPassword) {
-      console.log('Invalid credentials for user:', email);
-      return res.status(401).json({ 
-        error: "Invalid email or password" 
-      });
+      console.log('Invalid password for user:', email);
+      return res.status(401)
+        .header('Access-Control-Allow-Origin', '*')
+        .json({ error: "Invalid email or password" });
     }
 
     // Generate JWT token
@@ -58,7 +50,16 @@ export const login = async (req: Request, res: Response) => {
 
     console.log('Login successful for user:', email);
 
-    res.json({
+    // Set response headers
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, Accept');
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Pragma', 'no-cache');
+
+    // Send response
+    return res.status(200).json({
       token,
       user: {
         id: user.id,
@@ -69,7 +70,9 @@ export const login = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500)
+      .header('Access-Control-Allow-Origin', '*')
+      .json({ error: "Internal server error" });
   }
 };
 

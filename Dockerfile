@@ -1,25 +1,32 @@
-FROM node:18-slim
+# Use Node.js LTS version
+FROM node:18-alpine
 
+# Set working directory
 WORKDIR /app
 
-# Install build dependencies using apt-get instead of apk
-RUN apt-get update && \
-    apt-get install -y \
-    python3 \
-    build-essential \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+# Update certificates and install build dependencies
+RUN apk update --no-cache && \
+    apk add --no-cache ca-certificates && \
+    update-ca-certificates && \
+    apk add --no-cache python3 make g++ git
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies with legacy peer deps
-RUN npm install --legacy-peer-deps
+# Install dependencies with npm configuration to handle SSL issues
+RUN npm config set strict-ssl false && \
+    npm config set registry http://registry.npmjs.org/ && \
+    npm cache clean --force && \
+    npm install
 
-# Copy source code
+# Copy application files
 COPY . .
 
+# Build TypeScript
+RUN npm run build
+
+# Expose port
 EXPOSE 3000
 
-# Use development command
-CMD ["npm", "run", "dev"] 
+# Start application
+CMD ["npm", "start"]
