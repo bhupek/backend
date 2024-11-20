@@ -2,8 +2,10 @@ import sequelize from '../config/database';
 
 async function cleanupDatabase() {
   try {
-    // Drop all tables
-    await sequelize.drop();
+    // Drop all tables and types
+    await sequelize.query('DROP SCHEMA IF EXISTS public CASCADE;');
+    await sequelize.query('CREATE SCHEMA public;');
+    await sequelize.query('GRANT ALL ON SCHEMA public TO public;');
     console.log('Database cleaned successfully');
   } catch (error) {
     console.error('Error cleaning database:', error);

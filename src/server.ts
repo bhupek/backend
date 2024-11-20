@@ -7,6 +7,9 @@ import { requestLogger, notFoundHandler } from './middleware/requestLogger';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 
+// Import and initialize model associations
+import { initializeAssociations } from './models';
+
 // Import all models to ensure they are registered with Sequelize
 import './models/User';
 import './models/Student';
@@ -17,6 +20,9 @@ import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import studentRoutes from './routes/studentRoutes';
 import classRoutes from './routes/classRoutes';
+import assignmentRoutes from './routes/assignmentRoutes';
+import attendanceRoutes from './routes/attendanceRoutes';
+import schoolRoutes from './routes/schoolRoutes';
 
 const app = express();
 
@@ -56,27 +62,22 @@ const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'School Management System API',
+      title: 'School Management API',
       version: '1.0.0',
-      description: 'API documentation for School Management System',
+      description: 'API Documentation for School Management System',
     },
-    servers: [
-      {
-        url: `http://localhost:${config.port}`,
-        description: 'Development server',
-      },
-    ],
     components: {
       securitySchemes: {
         bearerAuth: {
           type: 'http',
           scheme: 'bearer',
-          bearerFormat: 'JWT',
-        },
-      },
+          bearerFormat: 'JWT'
+        }
+      }
     },
+    security: [{ bearerAuth: [] }]
   },
-  apis: [__dirname + '/routes/*.ts', __dirname + '/routes/*.js'],
+  apis: ['./src/routes/*.ts'], // path to your API routes
 };
 
 const swaggerDocs = swaggerJsdoc(swaggerOptions);
@@ -90,51 +91,51 @@ apiRouter.use('/auth', authRoutes);
 apiRouter.use('/users', userRoutes);
 apiRouter.use('/students', studentRoutes);
 apiRouter.use('/classes', classRoutes);
+apiRouter.use('/assignments', assignmentRoutes);
+apiRouter.use('/attendance', attendanceRoutes);
 
+// Add this where other routes are mounted
+apiRouter.use('/schools', schoolRoutes);
 // Mount routes both with and without /api prefix
 app.use('/api', apiRouter);
 app.use('/', apiRouter);
 
-// Handle preflight requests with permissive CORS
-app.options('*', (req: Request, res: Response) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', '*');
-  res.header('Access-Control-Expose-Headers', '*');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.status(204).send();
-});
-
-// 404 handler - add this after all routes
+// 404 handler
 app.use(notFoundHandler);
 
-async function startServer() {
+// Error handling middleware
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  console.error(err.stack);
+  res.status(500).json({ 
+    error: 'Internal Server Error',
+    message: err.message
+  });
+});
+
+const startServer = async () => {
   try {
-    // Connect to database
-    await sequelize.authenticate();
-    console.log('Database connection established successfully.');
-
-    // Sync database
+    // Initialize model associations
+    initializeAssociations();
+    
+    // Drop and recreate tables
     await sequelize.sync({ force: true });
-    console.log('Database synced successfully.');
+    console.log('Database synced successfully');
 
-    // Seed database
-    await seedDatabase();
-    console.log('Database seeded successfully.');
+    // Seed database if needed
+    if (process.env.NODE_ENV === 'development') {
+      await seedDatabase();
+      console.log('Database seeded successfully');
+    }
 
-    // Start server
-    app.listen(config.port, () => {
-      console.log(`Server is running on port ${config.port}`);
-      console.log(`Swagger documentation available at http://localhost:${config.port}/api-docs`);
-      console.log('Available routes:');
-      console.log('- POST /api/auth/login or POST /auth/login');
-      console.log('- POST /api/auth/register or POST /auth/register');
-      console.log('- GET /api/auth/me or GET /auth/me');
+    const PORT = config.port || 3000;
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+      console.log(`Swagger documentation available at http://localhost:${PORT}/api-docs`);
     });
   } catch (error) {
-    console.error('Unable to start server:', error);
+    console.error('Failed to start server:', error);
     process.exit(1);
   }
-}
+};
 
 startServer();

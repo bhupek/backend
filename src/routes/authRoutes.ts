@@ -1,5 +1,5 @@
 import express from 'express';
-import { login, register, getCurrentUser } from '../controllers/authController';
+import { login, register, getCurrentUser, forgotPassword, resetPassword } from '../controllers/authController';
 import { authenticateToken } from '../middleware/authMiddleware';
 
 const router = express.Router();
@@ -81,6 +81,57 @@ router.post('/login', login);
  *         description: User registered successfully
  */
 router.post('/register', register);
+
+/**
+ * @swagger
+ * /api/auth/forgot-password:
+ *   post:
+ *     tags: [Authentication]
+ *     summary: Request password reset
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *               schoolName:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Reset email sent if user exists
+ */
+router.post('/forgot-password', forgotPassword);
+
+/**
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     tags: [Authentication]
+ *     summary: Reset password with token
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - password
+ *             properties:
+ *               token:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ */
+router.post('/reset-password', resetPassword);
 
 /**
  * @swagger

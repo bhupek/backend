@@ -1,8 +1,13 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
+import { Op } from 'sequelize';
 import User from '../models/User';
+import School from '../models/School';
 import config from '../config';
+import { sendEmail, generatePasswordResetEmail } from '../utils/emailService';
+import { ApiError } from '../utils/ApiError';
 
 // Login controller
 export const login = async (req: Request, res: Response) => {
@@ -146,6 +151,114 @@ export const getCurrentUser = async (req: Request, res: Response) => {
   }
 };
 
+// Forgot password controller
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email, schoolName } = req.body;
+
+    if (!email) {
+      throw new ApiError(400, 'Email is required');
+    }
+
+    // Find user and their school
+    const user = await User.findOne({ 
+      where: { email },
+      include: [{
+        model: School,
+        where: schoolName ? { name: schoolName } : undefined
+      }]
+    });
+
+    if (!user) {
+      // Don't reveal that the user doesn't exist
+      return res.status(200).json({
+        message: 'If a user with that email exists, a password reset link will be sent.'
+      });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    // Save reset token and expiry
+    user.resetPasswordToken = hashedToken;
+    user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
+    await user.save();
+
+    try {
+      // Send reset email
+      const school = await School.findByPk(user.schoolId);
+      const schoolNameToUse = school?.name || 'School Management System';
+      
+      await sendEmail(
+        user.email,
+        'Password Reset Request',
+        generatePasswordResetEmail(resetToken, schoolNameToUse)
+      );
+
+      res.status(200).json({
+        message: 'Password reset link sent to email'
+      });
+    } catch (error) {
+      // If email fails, reset the token
+      user.resetPasswordToken = null;
+      user.resetPasswordExpires = null;
+      await user.save();
+      throw new ApiError(500, 'Error sending password reset email');
+    }
+  } catch (error) {
+    if (error instanceof ApiError) {
+      res.status(error.statusCode).json({ error: error.message });
+    } else {
+      console.error('Forgot password error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+};
+
+// Reset password controller
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      throw new ApiError(400, 'Token and password are required');
+    }
+
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await User.findOne({
+      where: {
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: {
+          [Op.gt]: new Date()
+        }
+      }
+    });
+
+    if (!user) {
+      throw new ApiError(400, 'Invalid or expired reset token');
+    }
+
+    // Update password and clear reset token
+    user.password = password; // Will be hashed by User model hooks
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+    await user.save();
+
+    res.status(200).json({
+      message: 'Password has been reset successfully'
+    });
+  } catch (error) {
+    if (error instanceof ApiError) {
+      res.status(error.statusCode).json({ error: error.message });
+    } else {
+      console.error('Reset password error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+};
+
 // Register controller
 export const register = async (req: Request, res: Response) => {
   try {
@@ -206,4 +319,4 @@ export const register = async (req: Request, res: Response) => {
     console.error('Registration error:', error);
     res.status(500).json({ error: "Internal server error" });
   }
-}; 
+};

@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import swaggerUi from 'swagger-ui-express';
 import { specs } from './config/swagger';
 import config from './config';
+import { Pool } from 'pg';
 
 // Import routes
 import authRoutes from './routes/authRoutes';
@@ -14,8 +15,15 @@ import classRoutes from './routes/classRoutes';
 import documentRoutes from './routes/documentRoutes';
 import feeRoutes from './routes/feeRoutes';
 import notificationRoutes from './routes/notificationRoutes';
+import adminRoutes from './routes/adminRoutes';
+import adminAnalyticsRoutes from './routes/adminAnalyticsRoutes';
+import { createAssignmentRouter } from './routes/assignmentRoutes';
+import schoolRoutes from './routes/schoolRoutes';
 
 const app = express();
+
+// Create database pool
+const pool = new Pool(config.database);
 
 // Middleware
 app.use(helmet());
@@ -35,6 +43,10 @@ app.use('/api/classes', classRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/fees', feeRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/admin/analytics', adminAnalyticsRoutes);
+app.use('/api/assignments', createAssignmentRouter(pool));
+app.use('/api/schools', schoolRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -42,4 +54,4 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   res.status(500).json({ error: 'Something broke!' });
 });
 
-export default app; 
+export default app;

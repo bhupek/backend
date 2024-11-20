@@ -79,7 +79,9 @@ const options = {
       { name: 'Classes', description: 'Class management endpoints' },
       { name: 'Documents', description: 'Document management endpoints' },
       { name: 'Fees', description: 'Fee management endpoints' },
-      { name: 'Notifications', description: 'Notification system endpoints' }
+      { name: 'Notifications', description: 'Notification system endpoints' },
+      { name: 'Assignments', description: 'Assignment management endpoints' },
+      { name: 'Attendance', description: 'Attendance management endpoints' }
     ],
     security: [{
       bearerAuth: [],
@@ -88,4 +90,4 @@ const options = {
   apis: ['./src/routes/*.ts'], // Path to the API routes
 };
 
-export const specs = swaggerJsdoc(options); 
+export const specs = swaggerJsdoc(options);
