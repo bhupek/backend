@@ -32,6 +32,9 @@ class Student extends Model {
   public parents!: Parents;
   public createdAt!: Date;
   public updatedAt!: Date;
+
+  // Add association accessors
+  public readonly user?: User;
 }
 
 Student.init({
@@ -107,7 +110,7 @@ Student.init({
     allowNull: true,
     validate: {
       isUrl: {
-        msg: "Invalid photo URL format"
+        msg: "Photo URL must be a valid URL"
       }
     }
   },
@@ -133,10 +136,13 @@ Student.init({
     validate: {
       isValidMedicalInfo(value: MedicalInfo) {
         if (!value || typeof value !== 'object') {
-          throw new Error('Invalid medical info format');
+          throw new Error('Medical info must be an object');
         }
-        if (!Array.isArray(value.allergies) || !Array.isArray(value.medications)) {
-          throw new Error('Allergies and medications must be arrays');
+        if (!Array.isArray(value.allergies)) {
+          throw new Error('Allergies must be an array');
+        }
+        if (!Array.isArray(value.medications)) {
+          throw new Error('Medications must be an array');
         }
       }
     }
@@ -147,26 +153,29 @@ Student.init({
     validate: {
       isValidParents(value: Parents) {
         if (!value || typeof value !== 'object') {
-          throw new Error('Invalid parents info format');
+          throw new Error('Parents info must be an object');
         }
-        if (!value.father || !value.mother) {
-          throw new Error('Both father and mother information are required');
-        }
-        ['father', 'mother'].forEach(parent => {
-          const info = value[parent as keyof Parents] as ParentInfo;
-          if (!info.name || !info.phone || !info.email) {
-            throw new Error(`${parent} information is incomplete`);
+        
+        const validateParentInfo = (info: ParentInfo, type: string) => {
+          if (!info || typeof info !== 'object') {
+            throw new Error(`${type} info must be an object`);
           }
-          if (info.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(info.email)) {
-            throw new Error(`Invalid ${parent} email format`);
+          if (!info.name || typeof info.name !== 'string') {
+            throw new Error(`${type}'s name is required and must be a string`);
           }
-          if (info.phone && !/^\+?[\d\s-]{10,}$/.test(info.phone)) {
-            throw new Error(`Invalid ${parent} phone format`);
+          if (!info.phone || typeof info.phone !== 'string') {
+            throw new Error(`${type}'s phone is required and must be a string`);
           }
-          if (info.photoUrl && !/^https?:\/\/.+/.test(info.photoUrl)) {
-            throw new Error(`Invalid ${parent} photo URL format`);
+          if (!info.email || typeof info.email !== 'string') {
+            throw new Error(`${type}'s email is required and must be a string`);
           }
-        });
+          if (info.photoUrl && typeof info.photoUrl !== 'string') {
+            throw new Error(`${type}'s photo URL must be a string`);
+          }
+        };
+
+        validateParentInfo(value.father, 'Father');
+        validateParentInfo(value.mother, 'Mother');
       }
     }
   }
@@ -178,20 +187,23 @@ Student.init({
   indexes: [
     {
       unique: true,
-      fields: ['userId']
+      fields: ['rollNo'],
+      name: 'student_roll_number_unique'
     },
     {
-      unique: true,
-      fields: ['rollNo']
+      fields: ['userId'],
+      name: 'student_user_index'
     }
   ]
 });
 
-// Set up associations
-Student.belongsTo(User, {
-  foreignKey: 'userId',
-  as: 'user',
-  onDelete: 'CASCADE'
-});
+// Export the association initialization function
+export function initStudentAssociations() {
+  Student.belongsTo(User, {
+    foreignKey: 'userId',
+    as: 'user',
+    onDelete: 'CASCADE'
+  });
+}
 
 export default Student;
