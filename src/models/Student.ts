@@ -11,7 +11,7 @@ interface ParentInfo {
   name: string;
   phone: string;
   email: string;
-  photoUrl?: string;
+  photo_url?: string;
 }
 
 interface Parents {
@@ -21,17 +21,17 @@ interface Parents {
 
 class Student extends Model {
   public id!: string;
-  public userId!: string;
-  public firstName!: string;
-  public lastName!: string;
-  public rollNo!: string;
-  public className!: string;
-  public photoUrl?: string;
-  public bloodGroup!: string;
-  public medicalInfo!: MedicalInfo;
+  public user_id!: string;
+  public first_name!: string;
+  public last_name!: string;
+  public roll_number!: string;
+  public class_name!: string;
+  public photo_url?: string;
+  public blood_group!: string;
+  public medical_info!: MedicalInfo;
   public parents!: Parents;
-  public createdAt!: Date;
-  public updatedAt!: Date;
+  public created_at!: Date;
+  public updated_at!: Date;
 
   // Add association accessors
   public readonly user?: User;
@@ -43,7 +43,7 @@ Student.init({
     defaultValue: UUIDV4,
     primaryKey: true,
   },
-  userId: {
+  user_id: {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
@@ -57,7 +57,7 @@ Student.init({
       notEmpty: { msg: "User ID cannot be empty" }
     }
   },
-  firstName: {
+  first_name: {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
@@ -69,7 +69,7 @@ Student.init({
       }
     }
   },
-  lastName: {
+  last_name: {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
@@ -81,11 +81,11 @@ Student.init({
       }
     }
   },
-  rollNo: {
+  roll_number: {
     type: DataTypes.STRING,
     allowNull: false,
     unique: {
-      name: 'unique_roll_number',
+      name: 'students_roll_number_unique',
       msg: 'Roll number already exists'
     },
     validate: {
@@ -97,7 +97,7 @@ Student.init({
       }
     }
   },
-  className: {
+  class_name: {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
@@ -105,7 +105,7 @@ Student.init({
       notEmpty: { msg: "Class name cannot be empty" }
     }
   },
-  photoUrl: {
+  photo_url: {
     type: DataTypes.STRING,
     allowNull: true,
     validate: {
@@ -114,7 +114,7 @@ Student.init({
       }
     }
   },
-  bloodGroup: {
+  blood_group: {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
@@ -126,7 +126,7 @@ Student.init({
       }
     }
   },
-  medicalInfo: {
+  medical_info: {
     type: DataTypes.JSONB,
     allowNull: false,
     defaultValue: {
@@ -169,7 +169,7 @@ Student.init({
           if (!info.email || typeof info.email !== 'string') {
             throw new Error(`${type}'s email is required and must be a string`);
           }
-          if (info.photoUrl && typeof info.photoUrl !== 'string') {
+          if (info.photo_url && typeof info.photo_url !== 'string') {
             throw new Error(`${type}'s photo URL must be a string`);
           }
         };
@@ -183,16 +183,17 @@ Student.init({
   sequelize,
   modelName: 'Student',
   tableName: 'students',
+  underscored: true,
   timestamps: true,
   indexes: [
     {
       unique: true,
-      fields: ['rollNo'],
-      name: 'student_roll_number_unique'
+      fields: ['roll_number'],
+      name: 'students_roll_number_unique'
     },
     {
-      fields: ['userId'],
-      name: 'student_user_index'
+      fields: ['user_id'],
+      name: 'students_user_id_index'
     }
   ]
 });
@@ -200,7 +201,7 @@ Student.init({
 // Export the association initialization function
 export function initStudentAssociations() {
   Student.belongsTo(User, {
-    foreignKey: 'userId',
+    foreignKey: 'user_id',
     as: 'user',
     onDelete: 'CASCADE'
   });

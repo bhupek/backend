@@ -114,19 +114,40 @@ async function seedDatabase() {
     // Create student profiles
     console.log('Creating student profiles...');
     await Promise.all(
-      students.map((user, index) =>
-        Student.create({
+      students.map((user, index) => {
+        const [firstName, lastName] = user.name.split(' ');
+        return Student.create({
           id: uuidv4(),
           user_id: user.id,
           school_id: school.id,
           class_id: classes[index].id,
+          first_name: firstName,
+          last_name: lastName,
           roll_number: `2023${index + 1}`,
+          class_name: classes[index].name,
+          blood_group: 'O+',
+          medical_info: {
+            allergies: [],
+            medications: []
+          },
+          parents: {
+            father: {
+              name: `${firstName}'s Father`,
+              phone: '1234567890',
+              email: `father.${firstName.toLowerCase()}@example.com`
+            },
+            mother: {
+              name: `${firstName}'s Mother`,
+              phone: '0987654321',
+              email: `mother.${firstName.toLowerCase()}@example.com`
+            }
+          },
           admission_number: `ADM2023${index + 1}`,
           status: 'ACTIVE',
           created_at: new Date(),
           updated_at: new Date()
-        })
-      )
+        });
+      })
     );
     console.log('Student profiles created successfully');
 
