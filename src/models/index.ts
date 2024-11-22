@@ -7,6 +7,7 @@ import Attendance, { initAttendanceAssociations } from './Attendance';
 import Address from './Address';
 import RolePermission from './RolePermission';
 import SubscriptionPlan from './SubscriptionPlan';
+import Subject, { initSubjectAssociations } from './Subject';
 
 // Initialize all model associations
 export const initializeAssociations = () => {
@@ -17,6 +18,7 @@ export const initializeAssociations = () => {
   initTeacherAssociations();
   initClassAssociations();
   initAttendanceAssociations();
+  initSubjectAssociations();
 };
 
 export {
@@ -29,4 +31,5 @@ export {
   Address,
   RolePermission,
   SubscriptionPlan,
+  Subject,
 };

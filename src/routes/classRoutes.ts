@@ -1,14 +1,8 @@
 import { Router } from 'express';
-
 import { authenticate, authorize } from '../middleware/authentication';
-
 import * as classController from '../controllers/classController';
 
-
-
 const router = Router();
-
-
 
 /**
  * @swagger
@@ -18,24 +12,51 @@ const router = Router();
  *     tags: [Classes]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: schoolId
+ *         schema:
+ *           type: string
+ *         description: Filter classes by school ID
  *     responses:
  *       200:
  *         description: List of classes
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: integer
- *                   name:
- *                     type: string
- *                   grade:
- *                     type: string
- *                   section:
- *                     type: string
+ *               type: object
+ *               properties:
+ *                 classes:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       grade:
+ *                         type: string
+ *                       section:
+ *                         type: string
+ *                       school_id:
+ *                         type: string
+ *                       class_teacher_id:
+ *                         type: string
+ *                       classTeacher:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                           name:
+ *                             type: string
+ *                       subjects:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: string
+ *                             name:
+ *                               type: string
  */
 router.get('/', authenticate, classController.getAllClasses);
 
@@ -52,7 +73,7 @@ router.get('/', authenticate, classController.getAllClasses);
  *         name: id
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
  *     responses:
  *       200:
  *         description: Class details
@@ -63,7 +84,7 @@ router.get('/:id', authenticate, classController.getClassById);
  * @swagger
  * /api/classes:
  *   post:
- *     summary: Create new class
+ *     summary: Create a new class
  *     tags: [Classes]
  *     security:
  *       - bearerAuth: []
@@ -74,21 +95,84 @@ router.get('/:id', authenticate, classController.getClassById);
  *           schema:
  *             type: object
  *             required:
- *               - name
  *               - grade
  *               - section
+ *               - school_id
  *             properties:
- *               name:
- *                 type: string
  *               grade:
  *                 type: string
  *               section:
+ *                 type: string
+ *               school_id:
+ *                 type: string
+ *               class_teacher_id:
+ *                 type: string
+ *               capacity:
+ *                 type: number
+ *               academicYear:
  *                 type: string
  *     responses:
  *       201:
  *         description: Class created successfully
  */
-router.post('/', authenticate, authorize('admin'), classController.createClass);
+router.post('/', authenticate, authorize(['ADMIN', 'SCHOOL_ADMIN']), classController.createClass);
+
+/**
+ * @swagger
+ * /api/classes/{id}:
+ *   put:
+ *     summary: Update a class
+ *     tags: [Classes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               grade:
+ *                 type: string
+ *               section:
+ *                 type: string
+ *               class_teacher_id:
+ *                 type: string
+ *               capacity:
+ *                 type: number
+ *               academicYear:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Class updated successfully
+ */
+router.put('/:id', authenticate, authorize(['ADMIN', 'SCHOOL_ADMIN']), classController.updateClass);
+
+/**
+ * @swagger
+ * /api/classes/{id}:
+ *   delete:
+ *     summary: Delete a class
+ *     tags: [Classes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Class deleted successfully
+ */
+router.delete('/:id', authenticate, authorize(['ADMIN', 'SCHOOL_ADMIN']), classController.deleteClass);
 
 /**
  * @swagger
@@ -103,7 +187,7 @@ router.post('/', authenticate, authorize('admin'), classController.createClass);
  *         name: id
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
  *     responses:
  *       200:
  *         description: List of students in the class
@@ -123,18 +207,16 @@ router.get('/:id/students', authenticate, classController.getClassStudents);
  *         name: classId
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
  *       - in: path
  *         name: studentId
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
  *     responses:
  *       200:
  *         description: Student added to class successfully
  */
-router.post('/:classId/students/:studentId', authenticate, authorize('admin'), classController.addStudentToClass);
+router.post('/:classId/students/:studentId', authenticate, authorize(['ADMIN']), classController.addStudentToClass);
 
-
-
-export default router; 
+export default router;

@@ -7,6 +7,7 @@ interface ClassAttributes {
   grade: string;
   section: string;
   school_id: string;
+  class_teacher_id?: string;
   academic_year: string;
   status: 'ACTIVE' | 'INACTIVE';
   capacity?: number;
@@ -20,6 +21,7 @@ class Class extends Model<ClassAttributes> implements ClassAttributes {
   public grade!: string;
   public section!: string;
   public school_id!: string;
+  public class_teacher_id?: string;
   public academic_year!: string;
   public status!: 'ACTIVE' | 'INACTIVE';
   public capacity?: number;
@@ -28,8 +30,10 @@ class Class extends Model<ClassAttributes> implements ClassAttributes {
 
   // Associations will be defined after model initialization
   public readonly school?: any;
+  public readonly classTeacher?: any;
   public readonly students?: any[];
   public readonly teachers?: any[];
+  public readonly subjects?: any[];
 }
 
 Class.init(
@@ -57,6 +61,14 @@ Class.init(
       allowNull: false,
       references: {
         model: 'schools',
+        key: 'id',
+      },
+    },
+    class_teacher_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'teachers',
         key: 'id',
       },
     },
@@ -106,11 +118,16 @@ Class.init(
 
 // Define associations after all models are initialized
 export function initClassAssociations() {
-  const { School, Student, Teacher } = sequelize.models;
+  const { School, Student, Teacher, Subject } = sequelize.models;
   
   Class.belongsTo(School, {
     foreignKey: 'school_id',
     as: 'school',
+  });
+
+  Class.belongsTo(Teacher, {
+    foreignKey: 'class_teacher_id',
+    as: 'classTeacher',
   });
 
   Class.hasMany(Student, {
@@ -123,6 +140,13 @@ export function initClassAssociations() {
     foreignKey: 'class_id',
     otherKey: 'teacher_id',
     as: 'teachers',
+  });
+
+  Class.belongsToMany(Subject, {
+    through: 'class_subjects',
+    foreignKey: 'class_id',
+    otherKey: 'subject_id',
+    as: 'subjects',
   });
 }
 

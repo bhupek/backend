@@ -97,10 +97,34 @@ const router = express.Router();
  */
 
 /**
+ * Fee Types Routes
+ */
+
+/**
+ * @swagger
+ * /api/fees/types:
+ *   post:
+ *     summary: Create a fee type (admin only)
+ *     tags: [Fees]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/FeeType'
+ *     responses:
+ *       201:
+ *         description: Fee type created successfully
+ */
+router.post('/types', authenticate, authorize('admin'), FeeController.createFeeType);
+
+/**
  * @swagger
  * /api/fees/types:
  *   get:
- *     summary: Get all fee types (paginated)
+ *     summary: Get all fee types
  *     tags: [Fees]
  *     security:
  *       - bearerAuth: []
@@ -127,29 +151,9 @@ router.get('/types', authenticate, FeeController.getAllFeeTypes);
 
 /**
  * @swagger
- * /api/fees/types:
- *   post:
- *     summary: Create a new fee type
- *     tags: [Fees]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/FeeType'
- *     responses:
- *       201:
- *         description: Fee type created successfully
- */
-router.post('/types', authenticate, authorize('admin'), FeeController.createFeeType);
-
-/**
- * @swagger
- * /api/fees/types/school/{schoolId}:
+ * /api/fees/types/{schoolId}:
  *   get:
- *     summary: Get all fee types for a specific school
+ *     summary: Get fee types by school
  *     tags: [Fees]
  *     security:
  *       - bearerAuth: []
@@ -167,7 +171,7 @@ router.post('/types', authenticate, authorize('admin'), FeeController.createFeeT
  *       200:
  *         description: List of fee types for the school
  */
-router.get('/types/school/:schoolId', authenticate, FeeController.getFeeTypesBySchool);
+router.get('/types/:schoolId', authenticate, FeeController.getFeeTypesBySchool);
 
 /**
  * @swagger
@@ -195,7 +199,7 @@ router.get('/types/:id', authenticate, FeeController.getFeeTypeById);
  * @swagger
  * /api/fees/types/{id}:
  *   put:
- *     summary: Update a fee type
+ *     summary: Update a fee type (admin only)
  *     tags: [Fees]
  *     security:
  *       - bearerAuth: []
@@ -223,7 +227,7 @@ router.put('/types/:id', authenticate, authorize('admin'), FeeController.updateF
  * @swagger
  * /api/fees/types/{id}:
  *   delete:
- *     summary: Delete a fee type
+ *     summary: Delete a fee type (admin only)
  *     tags: [Fees]
  *     security:
  *       - bearerAuth: []
@@ -242,30 +246,14 @@ router.put('/types/:id', authenticate, authorize('admin'), FeeController.updateF
 router.delete('/types/:id', authenticate, authorize('admin'), FeeController.deleteFeeType);
 
 /**
- * @swagger
- * /api/fees/types/{schoolId}:
- *   get:
- *     summary: Get all fee types for a school
- *     tags: [Fees]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: schoolId
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: List of fee types
+ * Fee Payments Routes
  */
-router.get('/types/:schoolId', authenticate, FeeController.getFeeTypes);
 
 /**
  * @swagger
  * /api/fees/payments:
  *   post:
- *     summary: Create a new fee payment
+ *     summary: Create a fee payment
  *     tags: [Fees]
  *     security:
  *       - bearerAuth: []
@@ -285,7 +273,7 @@ router.post('/payments', authenticate, FeeController.createFeePayment);
  * @swagger
  * /api/fees/payments/{id}:
  *   put:
- *     summary: Update a fee payment
+ *     summary: Update a fee payment (admin only)
  *     tags: [Fees]
  *     security:
  *       - bearerAuth: []
@@ -303,7 +291,32 @@ router.put('/payments/:id', authenticate, authorize('admin'), FeeController.upda
 
 /**
  * @swagger
- * /api/fees/school/{schoolId}/payments:
+ * /api/fees/payments/student/{studentId}/school/{schoolId}:
+ *   get:
+ *     summary: Get student's fee payments
+ *     tags: [Fees]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: studentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: path
+ *         name: schoolId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: List of student's fee payments
+ */
+router.get('/payments/student/:studentId/school/:schoolId', authenticate, FeeController.getFeePaymentsByStudent);
+
+/**
+ * @swagger
+ * /api/fees/payments/school/{schoolId}:
  *   get:
  *     summary: Get all fee payments for a school
  *     tags: [Fees]
@@ -342,32 +355,11 @@ router.put('/payments/:id', authenticate, authorize('admin'), FeeController.upda
  *       200:
  *         description: List of payments with pagination
  */
-router.get('/school/:schoolId/payments', authenticate, FeeController.getAllFeePayments);
+router.get('/payments/school/:schoolId', authenticate, FeeController.getAllFeePayments);
 
 /**
- * @swagger
- * /api/fees/student/{studentId}/school/{schoolId}:
- *   get:
- *     summary: Get fee payments for a student
- *     tags: [Fees]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: studentId
- *         required: true
- *         schema:
- *           type: integer
- *       - in: path
- *         name: schoolId
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: List of student's fee payments
+ * Fee Status Routes
  */
-router.get('/student/:studentId/school/:schoolId', authenticate, FeeController.getFeePaymentsByStudent);
 
 /**
  * @swagger
@@ -412,7 +404,7 @@ router.get('/school/:schoolId/pending', authenticate, FeeController.getPendingFe
  * @swagger
  * /api/fees/student/{studentId}/school/{schoolId}/status:
  *   get:
- *     summary: Get fee status for a student
+ *     summary: Get student's fee status
  *     tags: [Fees]
  *     security:
  *       - bearerAuth: []

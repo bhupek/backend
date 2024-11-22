@@ -4,6 +4,11 @@ import { validateRequest } from '../middleware/validate';
 import { z } from 'zod';
 import { AppError } from '../utils/appError';
 import FeeService from '../services/FeeService';
+import { Class } from '../models/Class';
+import { Subject } from '../models/Subject';
+import { Teacher } from '../models/Teacher';
+import { Student } from '../models/Student';
+import { Sequelize, sequelize } from '../utils/database';
 
 // Validation schemas
 const bulkFeeTypeSchema = z.object({
@@ -281,6 +286,139 @@ class AdminController {
       data: classes
     });
   });
+
+  getDashboardOverview = catchAsync(async (req: Request, res: Response) => {
+    const { schoolId } = req.query;
+
+    if (!schoolId) {
+      throw new AppError('School ID is required', 400);
+    }
+
+    // Get counts for different entities
+    const [
+      classCount,
+      subjectCount,
+      teacherCount,
+      studentCount,
+    ] = await Promise.all([
+      Class.count({ where: { school_id: schoolId } }),
+      Subject.count({ where: { school_id: schoolId } }),
+      Teacher.count({ where: { school_id: schoolId } }),
+      Student.count({ where: { school_id: schoolId } }),
+    ]);
+
+    // Get recent classes with teachers and subjects
+    const recentClasses = await Class.findAll({
+      where: { school_id: schoolId },
+      limit: 5,
+      order: [['createdAt', 'DESC']],
+      include: [
+        {
+          model: Teacher,
+          as: 'classTeacher',
+          attributes: ['id', 'name', 'email'],
+        },
+        {
+          model: Subject,
+          through: { attributes: [] },
+          attributes: ['id', 'name', 'description', 'credits'],
+        },
+      ],
+    });
+
+    // Get recent subjects with assigned teachers
+    const recentSubjects = await Subject.findAll({
+      where: { school_id: schoolId },
+      limit: 5,
+      order: [['createdAt', 'DESC']],
+      include: [
+        {
+          model: Teacher,
+          through: { attributes: [] },
+          attributes: ['id', 'name', 'email'],
+        },
+      ],
+    });
+
+    // Get recent teachers with their subjects
+    const recentTeachers = await Teacher.findAll({
+      where: { school_id: schoolId },
+      limit: 5,
+      order: [['createdAt', 'DESC']],
+      include: [
+        {
+          model: Subject,
+          through: { attributes: [] },
+          attributes: ['id', 'name', 'description'],
+        },
+        {
+          model: Class,
+          as: 'classTeacher',
+          attributes: ['id', 'grade', 'section'],
+        },
+      ],
+    });
+
+    // Get subject distribution
+    const subjectDistribution = await Subject.findAll({
+      where: { school_id: schoolId },
+      attributes: [
+        'name',
+        [sequelize.fn('COUNT', sequelize.col('teachers.id')), 'teacherCount'],
+        [sequelize.fn('COUNT', sequelize.col('classes.id')), 'classCount'],
+      ],
+      include: [
+        {
+          model: Teacher,
+          through: { attributes: [] },
+          attributes: [],
+        },
+        {
+          model: Class,
+          through: { attributes: [] },
+          attributes: [],
+        },
+      ],
+      group: ['Subject.id', 'Subject.name'],
+      raw: true,
+    });
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        metrics: {
+          classCount,
+          subjectCount,
+          teacherCount,
+          studentCount,
+        },
+        recentData: {
+          classes: recentClasses,
+          subjects: recentSubjects,
+          teachers: recentTeachers,
+        },
+        analytics: {
+          subjectDistribution,
+        },
+        links: {
+          subjects: {
+            list: '/admin/subjects',
+            create: '/admin/subjects/bulk',
+          },
+          teachers: {
+            list: '/admin/teachers',
+            create: '/admin/teachers',
+          },
+          classes: {
+            list: '/admin/classes',
+            create: '/admin/classes/bulk',
+          },
+        },
+      },
+    });
+  });
+
+  // ... rest of the code remains the same ...
 }
 
 export default new AdminController();

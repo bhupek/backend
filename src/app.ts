@@ -19,6 +19,7 @@ import adminRoutes from './routes/adminRoutes';
 import adminAnalyticsRoutes from './routes/adminAnalyticsRoutes';
 import { createAssignmentRouter } from './routes/assignmentRoutes';
 import schoolRoutes from './routes/schoolRoutes';
+import profileRoutes from './routes/profileRoutes';
 
 const app = express();
 
@@ -56,6 +57,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/admin/analytics', adminAnalyticsRoutes);
 app.use('/api/assignments', createAssignmentRouter(pool));
 app.use('/api/schools', schoolRoutes);
+app.use('/api/profile', profileRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

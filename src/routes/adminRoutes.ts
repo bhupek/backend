@@ -1,8 +1,251 @@
 import express from 'express';
-import { authenticate, authorize } from '../middleware/authentication';
+import { authenticate } from '../middleware/authentication';
+import { authorize } from '../middleware/authorization';
 import AdminController from '../controllers/AdminController';
+import * as classController from '../controllers/classController';
+import * as subjectController from '../controllers/subjectController';
+import * as teacherController from '../controllers/teacherController';
 
 const router = express.Router();
+
+/**
+ * @swagger
+ * tags:
+ *   name: Admin
+ *   description: Administrative operations for school management
+ */
+
+// Dashboard Overview Routes
+/**
+ * @swagger
+ * /api/admin/dashboard/overview:
+ *   get:
+ *     summary: Get admin dashboard overview
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: schoolId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: School ID to get overview for
+ *     responses:
+ *       200:
+ *         description: Dashboard overview data
+ */
+router.get(
+  '/dashboard/overview',
+  authenticate,
+  authorize(['ADMIN', 'SCHOOL_ADMIN']),
+  AdminController.getDashboardOverview
+);
+
+// Class Management Routes
+/**
+ * @swagger
+ * /api/admin/classes:
+ *   get:
+ *     summary: Get all classes (admin view)
+ *     tags: [Admin, Classes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: schoolId
+ *         schema:
+ *           type: string
+ *         description: Filter classes by school ID
+ *     responses:
+ *       200:
+ *         description: List of all classes with detailed information
+ */
+router.get(
+  '/classes',
+  authenticate,
+  authorize(['ADMIN', 'SCHOOL_ADMIN']),
+  classController.getAllClasses
+);
+
+/**
+ * @swagger
+ * /api/admin/classes/bulk:
+ *   post:
+ *     summary: Bulk create classes
+ *     tags: [Admin, Classes]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               classes:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - grade
+ *                     - section
+ *                     - school_id
+ *                   properties:
+ *                     grade:
+ *                       type: string
+ *                     section:
+ *                       type: string
+ *                     school_id:
+ *                       type: string
+ *                     class_teacher_id:
+ *                       type: string
+ *     responses:
+ *       201:
+ *         description: Classes created successfully
+ */
+router.post(
+  '/classes/bulk',
+  authenticate,
+  authorize(['ADMIN', 'SCHOOL_ADMIN']),
+  classController.bulkCreateClasses
+);
+
+// Subject Management Routes
+/**
+ * @swagger
+ * /api/admin/subjects:
+ *   get:
+ *     summary: Get all subjects (admin view)
+ *     tags: [Admin, Subjects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: schoolId
+ *         schema:
+ *           type: string
+ *         description: Filter subjects by school ID
+ *     responses:
+ *       200:
+ *         description: List of all subjects with detailed information
+ */
+router.get(
+  '/subjects',
+  authenticate,
+  authorize(['ADMIN', 'SCHOOL_ADMIN']),
+  subjectController.getAllSubjects
+);
+
+/**
+ * @swagger
+ * /api/admin/subjects/bulk:
+ *   post:
+ *     summary: Bulk create subjects
+ *     tags: [Admin, Subjects]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               subjects:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - name
+ *                     - school_id
+ *                   properties:
+ *                     name:
+ *                       type: string
+ *                     description:
+ *                       type: string
+ *                     credits:
+ *                       type: number
+ *                     school_id:
+ *                       type: string
+ *     responses:
+ *       201:
+ *         description: Subjects created successfully
+ */
+router.post(
+  '/subjects/bulk',
+  authenticate,
+  authorize(['ADMIN', 'SCHOOL_ADMIN']),
+  subjectController.bulkCreateSubjects
+);
+
+// Teacher Management Routes
+/**
+ * @swagger
+ * /api/admin/teachers:
+ *   get:
+ *     summary: Get all teachers (admin view)
+ *     tags: [Admin, Teachers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: schoolId
+ *         schema:
+ *           type: string
+ *         description: Filter teachers by school ID
+ *     responses:
+ *       200:
+ *         description: List of all teachers with detailed information
+ */
+router.get(
+  '/teachers',
+  authenticate,
+  authorize(['ADMIN', 'SCHOOL_ADMIN']),
+  teacherController.getAllTeachers
+);
+
+/**
+ * @swagger
+ * /api/admin/teachers:
+ *   post:
+ *     summary: Create a new teacher
+ *     tags: [Admin, Teachers]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - school_id
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               school_id:
+ *                 type: string
+ *               subjects:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       201:
+ *         description: Teacher created successfully
+ */
+router.post(
+  '/teachers',
+  authenticate,
+  authorize(['ADMIN', 'SCHOOL_ADMIN']),
+  teacherController.createTeacher
+);
 
 /**
  * @swagger
@@ -378,5 +621,12 @@ router.get(
   authorize('admin'),
   AdminController.getPaymentMethodStats
 );
+
+// Class routes
+router.get('/classes', authenticate, authorize('admin'), classController.getAllClasses);
+router.get('/classes/:id', authenticate, authorize('admin'), classController.getClassById);
+router.post('/classes', authenticate, authorize('admin'), classController.createClass);
+router.put('/classes/:id', authenticate, authorize('admin'), classController.updateClass);
+router.delete('/classes/:id', authenticate, authorize('admin'), classController.deleteClass);
 
 export default router;

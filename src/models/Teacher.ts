@@ -7,7 +7,6 @@ interface TeacherAttributes {
   school_id: string;
   specialization?: string;
   qualifications?: string[];
-  subjects?: string[];
   status: 'ACTIVE' | 'INACTIVE';
   created_at: Date;
   updated_at: Date;
@@ -19,7 +18,6 @@ class Teacher extends Model<TeacherAttributes> implements TeacherAttributes {
   public school_id!: string;
   public specialization?: string;
   public qualifications?: string[];
-  public subjects?: string[];
   public status!: 'ACTIVE' | 'INACTIVE';
   public created_at!: Date;
   public updated_at!: Date;
@@ -28,6 +26,7 @@ class Teacher extends Model<TeacherAttributes> implements TeacherAttributes {
   public readonly user?: any;
   public readonly school?: any;
   public readonly classes?: any[];
+  public readonly subjects?: any[];
 }
 
 Teacher.init(
@@ -59,10 +58,6 @@ Teacher.init(
       allowNull: true,
     },
     qualifications: {
-      type: DataTypes.ARRAY(DataTypes.STRING),
-      allowNull: true,
-    },
-    subjects: {
       type: DataTypes.ARRAY(DataTypes.STRING),
       allowNull: true,
     },
@@ -106,7 +101,7 @@ Teacher.init(
 );
 
 export function initTeacherAssociations() {
-  const { User, School, Class } = sequelize.models;
+  const { User, School, Class, Subject } = sequelize.models;
 
   Teacher.belongsTo(User, {
     foreignKey: 'user_id',
@@ -125,6 +120,13 @@ export function initTeacherAssociations() {
     foreignKey: 'teacher_id',
     otherKey: 'class_id',
     as: 'classes',
+  });
+
+  Teacher.belongsToMany(Subject, {
+    through: 'teacher_subjects',
+    foreignKey: 'teacher_id',
+    otherKey: 'subject_id',
+    as: 'subjects',
   });
 }
 

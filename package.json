@@ -8,6 +8,7 @@
     "dev": "ts-node-dev --poll --respawn --transpile-only src/server.ts",
     "build": "tsc",
     "seed": "ts-node src/seeders/index.ts",
+    "seed:fresh": "ts-node seed.ts",
     "setup-db": "ts-node src/database/setupDb.ts",
     "cleanup-db": "ts-node src/database/cleanup.ts",
     "reset-db": "npm run cleanup-db && npm run setup-db && npm run seed",

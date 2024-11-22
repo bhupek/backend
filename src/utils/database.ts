@@ -1,13 +1,13 @@
 import { Sequelize } from 'sequelize';
-import { config } from '../config';
+import config from '../config';
 
 export const sequelize = new Sequelize({
   dialect: 'postgres',
-  host: config.dbHost,
-  port: Number(config.dbPort),
-  database: config.dbName,
-  username: config.dbUser,
-  password: config.dbPassword,
+  host: config.database.host,
+  port: config.database.port,
+  database: config.database.database,
+  username: config.database.username,
+  password: config.database.password,
   logging: false
 });
 
@@ -19,4 +19,4 @@ export const connectDB = async () => {
     console.error('Unable to connect to the database:', error);
     process.exit(1);
   }
-}; 
+};
