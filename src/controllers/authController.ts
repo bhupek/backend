@@ -18,9 +18,10 @@ export const login = async (req: Request, res: Response) => {
     // Validate input
     if (!email || !password) {
       console.log('Missing email or password');
-      return res.status(400)
-        .header('Access-Control-Allow-Origin', '*')
-        .json({ error: "Email and password are required" });
+      return res.status(400).json({ 
+        error: "Email and password are required",
+        details: "Please provide both email and password"
+      });
     }
 
     // Find user by email
@@ -28,18 +29,20 @@ export const login = async (req: Request, res: Response) => {
     
     if (!user) {
       console.log('User not found:', email);
-      return res.status(401)
-        .header('Access-Control-Allow-Origin', '*')
-        .json({ error: "Invalid email or password" });
+      return res.status(401).json({ 
+        error: "Invalid credentials",
+        message: "The email or password you entered is incorrect"
+      });
     }
 
     // Check password
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
       console.log('Invalid password for user:', email);
-      return res.status(401)
-        .header('Access-Control-Allow-Origin', '*')
-        .json({ error: "Invalid email or password" });
+      return res.status(401).json({ 
+        error: "Invalid credentials",
+        message: "The email or password you entered is incorrect"
+      });
     }
 
     // Generate JWT token
@@ -47,19 +50,24 @@ export const login = async (req: Request, res: Response) => {
       { 
         id: user.id,
         email: user.email,
-        role: user.role 
+        role: user.role,
+        schoolId: user.schoolId || null
       },
       config.jwt.secret,
-      { expiresIn: config.jwt.expiresIn }
+      { 
+        algorithm: 'HS256',
+        expiresIn: '24h'
+      }
     );
 
     console.log('Login successful for user:', email);
 
     // Set response headers
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, Accept');
+    if (req.headers.origin === 'http://localhost:3001') {
+      res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3001');
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('Pragma', 'no-cache');
 
@@ -75,9 +83,15 @@ export const login = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    return res.status(500)
-      .header('Access-Control-Allow-Origin', '*')
-      .json({ error: "Internal server error" });
+    // Set CORS headers for error response
+    if (req.headers.origin === 'http://localhost:3001') {
+      res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3001');
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
+    return res.status(500).json({ 
+      error: "Internal server error",
+      message: "An error occurred during login. Please try again."
+    });
   }
 };
 
@@ -115,10 +129,14 @@ export const getCurrentUser = async (req: Request, res: Response) => {
       { 
         id: user.id,
         email: user.email,
-        role: user.role 
+        role: user.role,
+        schoolId: user.schoolId || null
       },
       config.jwt.secret,
-      { expiresIn: config.jwt.expiresIn }
+      { 
+        algorithm: 'HS256',
+        expiresIn: '24h'
+      }
     );
 
     console.log('Generated fresh token for user:', user.email);
@@ -295,10 +313,14 @@ export const register = async (req: Request, res: Response) => {
       { 
         id: user.id, 
         email: user.email, 
-        role: user.role 
+        role: user.role,
+        schoolId: user.schoolId || null
       },
       config.jwt.secret,
-      { expiresIn: config.jwt.expiresIn }
+      { 
+        algorithm: 'HS256',
+        expiresIn: '24h'
+      }
     );
 
     // Return user info and token (excluding password)

@@ -201,6 +201,86 @@ class AdminController {
       data: stats,
     });
   });
+
+  getAttendanceTrends = catchAsync(async (req: Request, res: Response) => {
+    // Mock data for attendance trends
+    const trends = {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+      datasets: [
+        {
+          label: 'Average Attendance',
+          data: [92, 88, 95, 89, 91, 93],
+          borderColor: '#4CAF50',
+          fill: false
+        }
+      ]
+    };
+    
+    res.json({
+      success: true,
+      data: trends
+    });
+  });
+
+  getFeePaymentStats = catchAsync(async (req: Request, res: Response) => {
+    // Mock data for fee payment methods
+    const stats = {
+      labels: ['Online', 'Cash', 'Cheque', 'Bank Transfer'],
+      datasets: [
+        {
+          data: [45, 25, 15, 15],
+          backgroundColor: ['#4CAF50', '#2196F3', '#FFC107', '#9C27B0']
+        }
+      ]
+    };
+    
+    res.json({
+      success: true,
+      data: stats
+    });
+  });
+
+  getStudents = catchAsync(async (req: Request, res: Response) => {
+    // Mock data for students
+    const students = [
+      { id: 1, name: 'John Doe', class: '10A', rollNo: '101', attendance: '95%' },
+      { id: 2, name: 'Jane Smith', class: '10B', rollNo: '102', attendance: '92%' },
+      { id: 3, name: 'Mike Johnson', class: '10A', rollNo: '103', attendance: '88%' }
+    ];
+    
+    res.json({
+      success: true,
+      data: students
+    });
+  });
+
+  getUsers = catchAsync(async (req: Request, res: Response) => {
+    // Mock data for users
+    const users = [
+      { id: 1, name: 'Admin User', role: 'ADMIN', email: 'admin@school.com' },
+      { id: 2, name: 'Teacher One', role: 'TEACHER', email: 'teacher1@school.com' },
+      { id: 3, name: 'Staff One', role: 'STAFF', email: 'staff1@school.com' }
+    ];
+    
+    res.json({
+      success: true,
+      data: users
+    });
+  });
+
+  getClasses = catchAsync(async (req: Request, res: Response) => {
+    // Mock data for classes
+    const classes = [
+      { id: 1, name: '10A', teacher: 'Mr. Smith', students: 30 },
+      { id: 2, name: '10B', teacher: 'Mrs. Jones', students: 28 },
+      { id: 3, name: '9A', teacher: 'Ms. Davis', students: 32 }
+    ];
+    
+    res.json({
+      success: true,
+      data: classes
+    });
+  });
 }
 
 export default new AdminController();

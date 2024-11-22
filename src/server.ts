@@ -23,19 +23,37 @@ import classRoutes from './routes/classRoutes';
 import assignmentRoutes from './routes/assignmentRoutes';
 import attendanceRoutes from './routes/attendanceRoutes';
 import schoolRoutes from './routes/schoolRoutes';
+import analyticsRoutes from './routes/analyticsRoutes';
+import adminRoutes from './routes/admin.routes';
 
 const app = express();
 
-// CORS configuration - Allow all origins and headers
+// CORS configuration - Allow frontend requests
 app.use(cors({
-  origin: true, // Allow all origins
+  origin: 'http://localhost:3001', // Specific origin instead of wildcard
   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-  allowedHeaders: '*', // Allow all headers
-  exposedHeaders: '*', // Expose all headers
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept', 'X-Requested-With'],
+  exposedHeaders: ['Content-Length', 'Content-Type'],
   credentials: true,
   preflightContinue: false,
-  optionsSuccessStatus: 204
+  optionsSuccessStatus: 204,
+  maxAge: 86400 // 24 hours
 }));
+
+// Add CORS headers to all responses
+app.use((req, res, next) => {  
+  const origin = req.headers.origin; 
+  if (origin === 'http://localhost:3001') {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, Accept, X-Requested-With');
+    res.header('Access-Control-Allow-Credentials', 'true');
+  }
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  next();
+});
 
 // Basic middleware
 app.use(express.json());
@@ -43,19 +61,6 @@ app.use(express.urlencoded({ extended: true }));
 
 // Request logging middleware
 app.use(requestLogger);
-
-// Add permissive CORS headers to all responses
-app.use((req: Request, res: Response, next: NextFunction) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', '*');
-  res.header('Access-Control-Expose-Headers', '*');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  if (req.method === 'OPTIONS') {
-    return res.status(204).send();
-  }
-  next();
-});
 
 // Swagger configuration
 const swaggerOptions = {
@@ -87,28 +92,35 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // Routes - make sure both /api and non-api routes work
 const apiRouter = express.Router();
+
+// Mount all routes under /api
 apiRouter.use('/auth', authRoutes);
 apiRouter.use('/users', userRoutes);
 apiRouter.use('/students', studentRoutes);
 apiRouter.use('/classes', classRoutes);
 apiRouter.use('/assignments', assignmentRoutes);
 apiRouter.use('/attendance', attendanceRoutes);
-
-// Add this where other routes are mounted
 apiRouter.use('/schools', schoolRoutes);
-// Mount routes both with and without /api prefix
-app.use('/api', apiRouter);
-app.use('/', apiRouter);
+apiRouter.use('/analytics', analyticsRoutes);
+apiRouter.use('/admin', adminRoutes);
 
-// 404 handler
-app.use(notFoundHandler);
+// Mount the API router under /api
+app.use('/api', apiRouter);
 
 // Error handling middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
-  res.status(500).json({ 
-    error: 'Internal Server Error',
-    message: err.message
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal Server Error',
+    status: err.status || 500
+  });
+});
+
+// Handle 404 errors for unmatched routes
+app.use((req: Request, res: Response) => {
+  res.status(404).json({
+    error: 'Not Found',
+    message: `Cannot ${req.method} ${req.path}`
   });
 });
 

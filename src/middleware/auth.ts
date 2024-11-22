@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { AppError } from '../utils/AppError';
 import logger from '../utils/logger';
 import { Role } from '../models/RolePermission';
+import config from '../config';
 
 // Extend Express Request type to include user
 declare global {
@@ -12,37 +13,76 @@ declare global {
                 id: string;
                 email: string;
                 role: Role;
-                schoolId: string;
+                schoolId: string | null;
             };
         }
     }
 }
 
-export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
+export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const authHeader = req.headers.authorization;
         if (!authHeader) {
-            throw new AppError('No authorization header', 401);
+            logger.warn('Authentication failed: No authorization header');
+            return res.status(401).json({
+                error: 'Authentication required',
+                message: 'Please log in to access this resource'
+            });
         }
 
         const token = authHeader.split(' ')[1];
         if (!token) {
-            throw new AppError('No token provided', 401);
+            logger.warn('Authentication failed: No token provided');
+            return res.status(401).json({
+                error: 'Authentication required',
+                message: 'Please log in to access this resource'
+            });
         }
 
         try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as {
+            const decoded = jwt.verify(token, config.jwtSecret) as {
                 id: string;
                 email: string;
                 role: Role;
-                schoolId: string;
+                schoolId: string | null;
+                iat: number;
+                exp: number;
             };
-            req.user = decoded;
+
+            // Token verification successful, set user in request
+            req.user = {
+                id: decoded.id,
+                email: decoded.email,
+                role: decoded.role,
+                schoolId: decoded.schoolId
+            };
+            
             next();
         } catch (error) {
-            throw new AppError('Invalid token', 401);
+            if (error instanceof jwt.TokenExpiredError) {
+                logger.warn('Authentication failed: Token expired');
+                return res.status(401).json({
+                    error: 'Token expired',
+                    message: 'Your session has expired. Please log in again'
+                });
+            }
+            
+            if (error instanceof jwt.JsonWebTokenError) {
+                logger.warn('Authentication failed: Invalid token');
+                return res.status(401).json({
+                    error: 'Invalid token',
+                    message: 'Your session is invalid. Please log in again'
+                });
+            }
+
+            logger.error('Token verification failed:', error);
+            return res.status(401).json({
+                error: 'Authentication failed',
+                message: 'Please log in again'
+            });
         }
     } catch (error) {
+        logger.error('Authentication middleware error:', error);
         next(error);
     }
 };

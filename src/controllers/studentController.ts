@@ -24,6 +24,7 @@ export const getAllStudents = async (req: Request, res: Response) => {
     const students = await Student.findAll({
       include: [{
         model: User,
+        as: 'user',
         attributes: ['name', 'email', 'role'],
         required: true // Inner join to ensure user exists
       }],

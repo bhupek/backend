@@ -26,7 +26,7 @@ export interface Config {
 
 const config: Config = {
   port: parseInt(process.env.PORT || '3000'),
-  jwtSecret: process.env.JWT_SECRET || 'your-secret-key',
+  jwtSecret: process.env.JWT_SECRET || 'school-management-system-secret-key',
   database: {
     database: process.env.DB_NAME || 'school_management',
     username: process.env.DB_USER || 'postgres',
